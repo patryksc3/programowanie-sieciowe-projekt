@@ -35,10 +35,18 @@ class App:
 
         self.user = User(email, password)
         if self.user.login():
-            tk.messagebox.showinfo("Success", "Logged in successfully!")
+            print("Success, Logged in successfully!")
+            #TODO: save account to local database
             self.frame_login.destroy()
-
+            self.mailbox_screen()
+      
     def mailbox_screen(self):
         self.frame_mailbox = tk.Frame(self.root, padx=20, pady=20)
         self.frame_mailbox.pack(expand=True)
+        tk.Label(self.frame_mailbox, text="Inbox").pack()
+        self.listbox_emails = tk.Listbox(self.frame_mailbox, width=100, height=30)
+        self.listbox_emails.pack(pady=10)
 
+        emails = self.user.list_emails()
+        for email in emails:
+            self.listbox_emails.insert(tk.END, email)
