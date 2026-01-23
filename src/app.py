@@ -22,18 +22,41 @@ class App:
         self.entry_password = tk.Entry(self.frame_login, show="*", width=30)
         self.entry_password.grid(row=1, column=1, pady=5)
 
+        #smtp server and port
+        tk.Label(self.frame_login, text="SMTP Server:").grid(row=2, column=0, sticky="e")
+        self.entry_smtp_server = tk.Entry(self.frame_login, width=30)
+        self.entry_smtp_server.grid(row=2, column=1, pady=5)
+
+        tk.Label(self.frame_login, text="SMTP Port:").grid(row=3, column=0, sticky="e")
+        self.entry_smtp_port = tk.Entry(self.frame_login, width=30)
+        self.entry_smtp_port.grid(row=3, column=1, pady=5)
+
+        #imap server and port
+        tk.Label(self.frame_login, text="IMAP Server:").grid(row=4, column=0, sticky="e")
+        self.entry_imap_server = tk.Entry(self.frame_login, width=30)
+        self.entry_imap_server.grid(row=4, column=1, pady=5)
+
+        tk.Label(self.frame_login, text="IMAP Port:").grid(row=5, column=0, sticky="e")
+        self.entry_imap_port = tk.Entry(self.frame_login, width=30)
+        self.entry_imap_port.grid(row=5, column=1, pady=5)
+
         # Login Button
         self.btn_login = tk.Button(self.frame_login, text="Login", command=self.handle_login)
-        self.btn_login.grid(row=2, columnspan=2, pady=10)
+        self.btn_login.grid(row=6, columnspan=2, pady=10)
+
 
     def handle_login(self):
         email = self.entry_email.get()
         password = self.entry_password.get()
-        if not email or not password:
-            print("Error", "Please enter both email and password.")
+        smtp_server = self.entry_smtp_server.get()
+        imap_server = self.entry_imap_server.get()
+        smtp_port = self.entry_smtp_port.get()
+        imap_port = self.entry_imap_port.get()
+        if not email or not password or not smtp_server or not imap_server or not smtp_port or not imap_port:
+            print("Error", "Please fill in all fields.")
             return
 
-        self.user = User(email, password)
+        self.user = User(email, password, smtp_server, int(smtp_port), imap_server, int(imap_port))
         if self.user.login():
             print("Success, Logged in successfully!")
             #TODO: save account to local database

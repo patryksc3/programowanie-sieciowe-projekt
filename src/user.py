@@ -6,13 +6,14 @@ import smtplib
 
 
 class User:
-    def __init__(self, email: str, password: str):
+    def __init__(self, email: str, password: str, smtp_server: str, smtp_port: int,
+                 imap_server: str, imap_port: int):
         self.email = email
         self.password = password
-        self.smtp_server = "smtp.wp.pl"
-        self.smtp_port = 465
-        self.imap_server = "imap.wp.pl"
-        self.imap_port = 993
+        self.smtp_server = smtp_server
+        self.smtp_port = smtp_port
+        self.imap_server = imap_server
+        self.imap_port = imap_port
 
     def login(self) -> bool:
         try:
