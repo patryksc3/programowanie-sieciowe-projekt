@@ -154,3 +154,14 @@ class User:
         except sqlite3.Error as e:
             print(f"Database error: {e}")
             return []
+
+    @staticmethod
+    def delete_from_db(email: str):
+        try:
+            conn = sqlite3.connect('users.db')
+            cursor = conn.cursor()
+            cursor.execute('DELETE FROM users WHERE email = ?', (email,))
+            conn.commit()
+            conn.close()
+        except sqlite3.Error as e:
+            print(f"Database error: {e}")

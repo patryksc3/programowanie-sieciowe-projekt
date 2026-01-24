@@ -59,7 +59,13 @@ class App:
         self.listbox_saved.bind("<Double-Button-1>", lambda _: self.handle_saved_login())
         self.btn_login_saved = tk.Button(self.frame_saved, text="Login selected", command=self.handle_saved_login)
         self.btn_login_saved.pack(pady=(5, 0))
+        self.btn_delete_saved = tk.Button(self.frame_saved, text="Delete selected", command=self.handle_delete_saved)
+        self.btn_delete_saved.pack(pady=(5, 0))
 
+        self.refresh_saved_users()
+
+    def refresh_saved_users(self):
+        self.listbox_saved.delete(0, tk.END)
         self.saved_users = User.load_saved_users()
         for saved in self.saved_users:
             self.listbox_saved.insert(tk.END, saved["email"])
@@ -125,3 +131,16 @@ class App:
         emails = self.user.list_emails()
         for email in emails:
             self.listbox_emails.insert(tk.END, email)
+    
+    def handle_delete_saved(self):
+        selection = self.listbox_saved.curselection()
+        if not selection:
+            print("Error", "Select a saved login to delete.")
+            return
+
+        saved = self.saved_users[selection[0]]
+        User.delete_from_db(saved["email"])
+        self.listbox_saved.delete(selection[0])
+        del self.saved_users[selection[0]]
+        print("Success", "Saved login deleted.")
+        self.refresh_saved_users()
