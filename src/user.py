@@ -3,6 +3,7 @@ import email
 from email.header import decode_header
 import imaplib
 import smtplib
+import sqlite3
 
 
 class User:
@@ -71,3 +72,85 @@ class User:
             return []
         
         return mails 
+
+    def save_to_db(self):
+        try:
+            conn = sqlite3.connect('users.db')
+            cursor = conn.cursor()
+            
+            # Create table if it doesn't exist
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS users (
+                    id INTEGER PRIMARY KEY,
+                    email TEXT UNIQUE NOT NULL,
+                    password TEXT NOT NULL,
+                    smtp_server TEXT NOT NULL,
+                    smtp_port INTEGER NOT NULL,
+                    imap_server TEXT NOT NULL,
+                    imap_port INTEGER NOT NULL
+                )
+            ''')
+            
+            # Check if email exists
+            cursor.execute('SELECT id FROM users WHERE email = ?', (self.email,))
+            existing_user = cursor.fetchone()
+            
+            if existing_user:
+                # Update existing user
+                cursor.execute('''
+                    UPDATE users 
+                    SET password = ?, smtp_server = ?, smtp_port = ?, imap_server = ?, imap_port = ?
+                    WHERE email = ?
+                ''', (self.password, self.smtp_server, self.smtp_port, self.imap_server, self.imap_port, self.email))
+            else:
+                # Insert new user
+                cursor.execute('''
+                    INSERT INTO users (email, password, smtp_server, smtp_port, imap_server, imap_port)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                ''', (self.email, self.password, self.smtp_server, self.smtp_port, self.imap_server, self.imap_port))
+            
+            conn.commit()
+            conn.close()
+        except sqlite3.Error as e:
+            print(f"Database error: {e}") 
+
+    @staticmethod
+    def load_saved_users():
+        try:
+            conn = sqlite3.connect('users.db')
+            cursor = conn.cursor()
+
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS users (
+                    id INTEGER PRIMARY KEY,
+                    email TEXT UNIQUE NOT NULL,
+                    password TEXT NOT NULL,
+                    smtp_server TEXT NOT NULL,
+                    smtp_port INTEGER NOT NULL,
+                    imap_server TEXT NOT NULL,
+                    imap_port INTEGER NOT NULL
+                )
+            ''')
+
+            cursor.execute('''
+                SELECT email, password, smtp_server, smtp_port, imap_server, imap_port
+                FROM users
+                ORDER BY id DESC
+            ''')
+            rows = cursor.fetchall()
+            conn.close()
+
+            return [
+                {
+                    "email": row[0],
+                    "password": row[1],
+                    "smtp_server": row[2],
+                    "smtp_port": row[3],
+                    "imap_server": row[4],
+                    "imap_port": row[5],
+                }
+                for row in rows
+            ]
+        except sqlite3.Error as e:
+            print(f"Database error: {e}")
+            return []
