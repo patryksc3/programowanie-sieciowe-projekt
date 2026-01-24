@@ -76,7 +76,7 @@ class App:
             print("Error", "Please fill in all fields.")
             return
 
-        self.user = User(email, password, smtp_server, int(smtp_port), imap_server, int(imap_port))
+        self.user = User(email, password, smtp_server, smtp_port, imap_server, imap_port)
         if self.user.login():
             print("Success, Logged in successfully!")
             self.user.save_to_db()
