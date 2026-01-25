@@ -127,7 +127,15 @@ class App:
         tk.Label(self.frame_mailbox, text="Inbox").pack()
         self.listbox_emails = tk.Listbox(self.frame_mailbox, width=100, height=30)
         self.listbox_emails.pack(pady=10)
+        
+        # Refresh Button
+        self.btn_refresh = tk.Button(self.frame_mailbox, text="Refresh", command=self.refresh_emails)
+        self.btn_refresh.pack(pady=5)
 
+        self.refresh_emails()
+
+    def refresh_emails(self):
+        self.listbox_emails.delete(0, tk.END)
         emails = self.user.list_emails()
         for email in emails:
             self.listbox_emails.insert(tk.END, email)
