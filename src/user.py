@@ -1,6 +1,8 @@
 
 import email
 from email.header import decode_header
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 import imaplib
 import smtplib
 import sqlite3
@@ -15,6 +17,7 @@ class User:
         self.smtp_port = smtp_port
         self.imap_server = imap_server
         self.imap_port = imap_port
+        self.current_ids = []
 
     def login(self) -> bool:
         try:
@@ -35,7 +38,7 @@ class User:
         try:
             mail = imaplib.IMAP4_SSL(self.imap_server, self.imap_port)
             mail.login(self.email, self.password)
-            mail.select("inbox")
+            mail.select("INBOX")
 
             status, messages = mail.search(None, "ALL")
 
@@ -45,6 +48,8 @@ class User:
             mail_ids = messages[0].split()
             latest_ids = mail_ids[-limit:]
             latest_ids.reverse()
+
+            self.current_ids = latest_ids
 
             for mail_id in latest_ids:
                 status, msg_data = mail.fetch(mail_id, "(RFC822)")
@@ -57,9 +62,14 @@ class User:
                         if subject_header:
                             decoded_list = decode_header(subject_header)
                             subject, encoding = decoded_list[0]
-                            
+
                             if isinstance(subject, bytes):
-                                subject = subject.decode(encoding if encoding else "utf-8", errors="ignore")
+                                if encoding == "unknown-8bit":
+                                    encoding = "utf-8"
+                                try:
+                                    subject = subject.decode(encoding if encoding else "utf-8", errors="ignore")
+                                except LookupError:
+                                    subject = subject.decode("utf-8", errors="ignore")
                         else:
                             subject = "(Brak tematu)"
                         
@@ -67,8 +77,9 @@ class User:
 
             mail.close()
             mail.logout()
-            
-        except Exception:
+
+        except Exception as e:
+            print(f"Błąd pobierania listy: {e}")
             return []
         
         return mails 
@@ -165,3 +176,72 @@ class User:
             conn.close()
         except sqlite3.Error as e:
             print(f"Database error: {e}")
+
+    def get_email_body(self, index):
+        if index >= len(self.current_ids):
+            return "Error: Message not found.", "Unknow sender"
+
+        mail_id = self.current_ids[index]
+        body = ""
+        sender = ""
+
+        try:
+            mail = imaplib.IMAP4_SSL(self.imap_server, self.imap_port)
+            mail.login(self.email, self.password)
+            mail.select("inbox")
+
+            status, msg_data = mail.fetch(mail_id, "(RFC822)")
+
+            for response_part in msg_data:
+                if isinstance(response_part, tuple):
+                    msg = email.message_from_bytes(response_part[1])
+                    sender = msg.get("From", "Unknow sender")
+
+                    if msg.is_multipart():
+                        for part in msg.walk():
+                            content_type = part.get_content_type()
+                            content_disposition = str(part.get("Content-Disposition"))
+
+                            if "attachment" not in content_disposition:
+                                if content_type == "text/plain":
+                                    try:
+                                        body = part.get_payload(decode=True).decode()
+                                        break
+                                    except:
+                                        pass
+                                elif content_type == "text/html" and not body:
+                                    try:
+                                        body = part.get_payload(decode=True).decode()
+                                    except:
+                                        pass
+                    else:
+                        try:
+                            body = msg.get_payload(decode=True).decode()
+                        except:
+                            body = msg.get_payload(decode=True).decode("utf-8", errors="ignore")
+
+            mail.close()
+            mail.logout()
+
+        except Exception as e:
+            return f"Error: {e}", "Error"
+
+        return body, sender
+
+    def send_email(self, to_email, subject, body):
+        try:
+            msg = MIMEMultipart()
+            msg['From'] = self.email
+            msg['To'] = to_email
+            msg['Subject'] = subject
+            msg.attach(MIMEText(body, 'plain'))
+
+            server = smtplib.SMTP_SSL(self.smtp_server, self.smtp_port)
+            server.login(self.email, self.password)
+            server.send_message(msg)
+            server.quit()
+
+            return True, "Message send."
+        except Exception as e:
+            print(f"Sending error: {e}")
+            return False, f"Error: {e}"

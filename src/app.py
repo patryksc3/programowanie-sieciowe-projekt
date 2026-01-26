@@ -1,5 +1,7 @@
 from user import User
 import tkinter as tk
+from tkinter import messagebox
+
 class App:
     def __init__(self, root):
         self.root = root
@@ -124,14 +126,31 @@ class App:
     def mailbox_screen(self):
         self.frame_mailbox = tk.Frame(self.root, padx=20, pady=20)
         self.frame_mailbox.pack(expand=True)
-        tk.Label(self.frame_mailbox, text="Inbox").pack()
-        self.listbox_emails = tk.Listbox(self.frame_mailbox, width=100, height=30)
-        self.listbox_emails.pack(pady=10)
-        
-        # Refresh Button
-        self.btn_refresh = tk.Button(self.frame_mailbox, text="Refresh", command=self.refresh_emails)
-        self.btn_refresh.pack(pady=5)
 
+        tk.Label(self.frame_mailbox, text="Inbox").pack()
+
+        btn_frame = tk.Frame(self.frame_mailbox)
+        btn_frame.pack(side=tk.BOTTOM, pady=10)
+
+        # Refresh button
+        self.btn_refresh = tk.Button(btn_frame, text="Refresh", command=self.refresh_emails)
+        self.btn_refresh.pack(side=tk.LEFT, padx=5)
+
+        self.btn_compose = tk.Button(btn_frame, text="Compose", command=self.open_compose_window)
+        self.btn_compose.pack(side=tk.LEFT, padx=5)
+
+        list_frame = tk.Frame(self.frame_mailbox)
+        list_frame.pack(side=tk.TOP, expand=True, fill="both")
+
+        scrollbar = tk.Scrollbar(list_frame)
+        scrollbar.pack(side=tk.RIGHT, fill="y")
+
+        self.listbox_emails = tk.Listbox(list_frame, width=100, height=25, yscrollcommand=scrollbar.set)
+        self.listbox_emails.pack(side=tk.LEFT, expand=True, fill="both")
+
+        scrollbar.config(command=self.listbox_emails.yview)
+
+        self.listbox_emails.bind('<Double-Button-1>', self.open_selected_email)
         self.refresh_emails()
 
     def refresh_emails(self):
@@ -152,3 +171,66 @@ class App:
         del self.saved_users[selection[0]]
         print("Success", "Saved login deleted.")
         self.refresh_saved_users()
+
+    def open_selected_email(self, event):
+        selection = self.listbox_emails.curselection()
+        if not selection:
+            return
+
+        index = selection[0]
+        body, sender = self.user.get_email_body(index)
+
+        top = tk.Toplevel(self.root)
+        top.title(f"Message from: {sender}")
+        top.geometry("600x500")
+
+        text_area = tk.Text(top, wrap="word", padx=10, pady=10)
+        text_area.pack(expand=True, fill="both")
+
+        text_area.insert(tk.END, f"Sender: {sender}\n\n")
+        text_area.insert(tk.END, "-" * 50 + "\n\n")
+        text_area.insert(tk.END, body)
+
+        text_area.config(state="disabled")
+
+    def open_compose_window(self):
+
+        self.compose_window = tk.Toplevel(self.root)
+        self.compose_window.title("New message")
+        self.compose_window.geometry("500x450")
+
+        frame = tk.Frame(self.compose_window, padx=10, pady=10)
+        frame.pack(fill="both", expand=True)
+
+        tk.Label(frame, text="To:").grid(row=0, column=0, sticky="e")
+        self.entry_to = tk.Entry(frame, width=50)
+        self.entry_to.grid(row=0, column=1, pady=5, padx=5)
+
+        tk.Label(frame, text="Title:").grid(row=1, column=0, sticky="e")
+        self.entry_subject = tk.Entry(frame, width=50)
+        self.entry_subject.grid(row=1, column=1, pady=5, padx=5)
+
+        tk.Label(frame, text="Content:").grid(row=2, column=0, sticky="ne", pady=5)
+        self.text_body = tk.Text(frame, width=50, height=15)
+        self.text_body.grid(row=2, column=1, pady=5, padx=5)
+
+        btn_send = tk.Button(frame, text="Send", command=self.handle_send_email)
+        btn_send.grid(row=3, column=1, sticky="e", pady=10)
+
+    def handle_send_email(self):
+        recipient = self.entry_to.get()
+        subject = self.entry_subject.get()
+
+        body = self.text_body.get("1.0", "end-1c")
+
+        if not recipient:
+            messagebox.showerror("Error", "Enter the address!")
+            return
+
+        success, message = self.user.send_email(recipient, subject, body)
+
+        if success:
+            messagebox.showinfo("Succes", message)
+            self.compose_window.destroy()
+        else:
+            messagebox.showerror("Error", message)
