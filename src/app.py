@@ -181,62 +181,56 @@ class App:
         body, sender = self.user.get_email_body(index)
 
         top = tk.Toplevel(self.root)
-        top.title(f"Wiadomość od: {sender}")
+        top.title(f"Message from: {sender}")
         top.geometry("600x500")
 
         text_area = tk.Text(top, wrap="word", padx=10, pady=10)
         text_area.pack(expand=True, fill="both")
 
-        text_area.insert(tk.END, f"Nadawca: {sender}\n\n")
+        text_area.insert(tk.END, f"Sender: {sender}\n\n")
         text_area.insert(tk.END, "-" * 50 + "\n\n")
         text_area.insert(tk.END, body)
 
         text_area.config(state="disabled")
 
     def open_compose_window(self):
-        # Tworzymy nowe okno (popup)
+
         self.compose_window = tk.Toplevel(self.root)
-        self.compose_window.title("Nowa wiadomość")
+        self.compose_window.title("New message")
         self.compose_window.geometry("500x450")
 
-        # Kontener na formularz
         frame = tk.Frame(self.compose_window, padx=10, pady=10)
         frame.pack(fill="both", expand=True)
 
-        # Do kogo
-        tk.Label(frame, text="Do:").grid(row=0, column=0, sticky="e")
+        tk.Label(frame, text="To:").grid(row=0, column=0, sticky="e")
         self.entry_to = tk.Entry(frame, width=50)
         self.entry_to.grid(row=0, column=1, pady=5, padx=5)
 
-        # Temat
-        tk.Label(frame, text="Temat:").grid(row=1, column=0, sticky="e")
+        tk.Label(frame, text="Title:").grid(row=1, column=0, sticky="e")
         self.entry_subject = tk.Entry(frame, width=50)
         self.entry_subject.grid(row=1, column=1, pady=5, padx=5)
 
-        # Treść
-        tk.Label(frame, text="Treść:").grid(row=2, column=0, sticky="ne", pady=5)
+        tk.Label(frame, text="Content:").grid(row=2, column=0, sticky="ne", pady=5)
         self.text_body = tk.Text(frame, width=50, height=15)
         self.text_body.grid(row=2, column=1, pady=5, padx=5)
 
-        # Przycisk Wyślij
-        btn_send = tk.Button(frame, text="Wyślij", command=self.handle_send_email)
+        btn_send = tk.Button(frame, text="Send", command=self.handle_send_email)
         btn_send.grid(row=3, column=1, sticky="e", pady=10)
 
     def handle_send_email(self):
         recipient = self.entry_to.get()
         subject = self.entry_subject.get()
-        # Pobieranie tekstu z widgetu Text (od początku '1.0' do końca 'end-1c')
+
         body = self.text_body.get("1.0", "end-1c")
 
         if not recipient:
-            messagebox.showerror("Błąd", "Podaj adresata!")
+            messagebox.showerror("Error", "Enter the address!")
             return
 
-        # Wywołanie funkcji z user.py
         success, message = self.user.send_email(recipient, subject, body)
 
         if success:
-            messagebox.showinfo("Sukces", message)
-            self.compose_window.destroy()  # Zamknij okno po wysłaniu
+            messagebox.showinfo("Succes", message)
+            self.compose_window.destroy()
         else:
-            messagebox.showerror("Błąd", message)
+            messagebox.showerror("Error", message)

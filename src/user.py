@@ -179,7 +179,7 @@ class User:
 
     def get_email_body(self, index):
         if index >= len(self.current_ids):
-            return "Błąd: Nie znaleziono wiadomości.", "Nieznany nadawca"
+            return "Error: Message not found.", "Unknow sender"
 
         mail_id = self.current_ids[index]
         body = ""
@@ -195,7 +195,7 @@ class User:
             for response_part in msg_data:
                 if isinstance(response_part, tuple):
                     msg = email.message_from_bytes(response_part[1])
-                    sender = msg.get("From", "Nieznany nadawca")
+                    sender = msg.get("From", "Unknow sender")
 
                     if msg.is_multipart():
                         for part in msg.walk():
@@ -224,7 +224,7 @@ class User:
             mail.logout()
 
         except Exception as e:
-            return f"Błąd pobierania treści: {e}", "Błąd"
+            return f"Error: {e}", "Error"
 
         return body, sender
 
@@ -241,7 +241,7 @@ class User:
             server.send_message(msg)
             server.quit()
 
-            return True, "Wiadomość wysłana pomyślnie."
+            return True, "Message send."
         except Exception as e:
-            print(f"Błąd wysyłania: {e}")
-            return False, f"Błąd: {e}"
+            print(f"Sending error: {e}")
+            return False, f"Error: {e}"
